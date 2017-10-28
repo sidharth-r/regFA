@@ -43,6 +43,8 @@ namespace regexFA
         {
             String regex = textIn.Text;
 
+            if (graphFA.NodeCount > 0)
+                graphFA = new Graph("GraphFA");     //fix this
             procRegex(regex);
 
 
@@ -74,6 +76,7 @@ namespace regexFA
             }
 
             gViewer.Graph = null;
+            graphFA.Attr.LayerDirection = LayerDirection.LR;
             gViewer.CalculateLayout(graphFA);
             gViewer.Graph = graphFA;
             gViewer.Refresh();
@@ -237,7 +240,7 @@ namespace regexFA
             }
             else if(c == '+')
             {
-
+                root.graph = new GraphPlus(root.left.graph, root.right.graph);
             }
             else if (c == '.')
             {
@@ -314,6 +317,7 @@ namespace regexFA
     {
         public int posX, posY;
         public float scale;
+        public String labelEdge;
 
         public List<Node> nodes;
         public List<Edge> edges;
@@ -328,6 +332,7 @@ namespace regexFA
             posX = x;
             posY = y;
             scale = s;
+            labelEdge = "" + label;
 
             nodes = new List<Node>();
             edges = new List<Edge>();
@@ -345,7 +350,53 @@ namespace regexFA
     {
         public GraphPlus(GraphBase a, GraphBase b, int x = 0, int y = 0, float s = 1.0f)
         {
+            nodes = new List<Node>();
+            edges = new List<Edge>();
 
+            Node n = new Node("gplus_" + a.nodes[0].Id + b.nodes[0].Id + "_strt");
+            n.LabelText = "strt";
+            anchorStart = n;
+            nodes.Add(n);
+            n = new Node("gplus_" + a.nodes[0].Id + b.nodes[0].Id + "_rcva");
+            n.LabelText = "rcva";
+            nodes.Add(n);
+            n = new Node("gplus_" + a.nodes[0].Id + b.nodes[0].Id + "_rcvb");
+            n.LabelText = "rcvb";
+            nodes.Add(n);
+            n = new Node("gplus_" + a.nodes[0].Id + b.nodes[0].Id + "_end");
+            n.LabelText = "end";
+            anchorEnd = n;
+            nodes.Add(n);
+            //nodes.Add(new Node("gplus_" + a.nodes[0].Id + b.nodes[0].Id+"_rcva"));
+            //nodes.Add(new Node("gplus_" + a.nodes[0].Id + b.nodes[0].Id+"_rcvb"));
+            //nodes.Add(new Node("gplus_" + a.nodes[0].Id + b.nodes[0].Id + "_end"));
+            nodes.AddRange(a.nodes);
+            nodes.AddRange(b.nodes);
+            
+            String aStartA = a.anchorStart.Id,
+                aEndA = a.anchorEnd.Id,
+                aStartB = b.anchorStart.Id,
+                aEndB = b.anchorEnd.Id;
+
+            edges.Add(new Edge("gplus_" + a.nodes[0].Id + b.nodes[0].Id+"_strt","",aStartA));
+            String lt = "";
+            if(a.nodes.Count == 1)
+            {
+                lt = a.labelEdge;
+            }
+            Edge e = new Edge(aEndA, lt, "gplus_" + a.nodes[0].Id + b.nodes[0].Id + "_rcva");
+            
+            edges.Add(e);
+            edges.Add(new Edge("gplus_" + a.nodes[0].Id + b.nodes[0].Id+"_strt","",aStartB));
+            if (b.nodes.Count == 1)
+            {
+                lt = b.labelEdge;
+            }
+            edges.Add(new Edge(aEndB, lt, "gplus_" + a.nodes[0].Id + b.nodes[0].Id + "_rcvb"));
+            edges.Add(new Edge("gplus_" + a.nodes[0].Id + b.nodes[0].Id+"_rcva","","gplus_" + a.nodes[0].Id + b.nodes[0].Id + "_end"));
+            edges.Add(new Edge("gplus_" + a.nodes[0].Id + b.nodes[0].Id+"_rcvb","","gplus_" + a.nodes[0].Id + b.nodes[0].Id + "_end"));
+            edges.AddRange(a.edges);
+            edges.AddRange(b.edges);
         }
     }
 
