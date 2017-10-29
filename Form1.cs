@@ -323,6 +323,13 @@ namespace regexFA
         public List<Edge> edges;
 
         public Node anchorStart, anchorEnd;
+
+        private static Random random = new Random();
+        public static string RandomString(int length = 5)
+        {
+            const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+            return new string(Enumerable.Repeat(chars, length).Select(s => s[random.Next(s.Length)]).ToArray());
+        }
     }
 
     public class GraphSymbol : GraphBase
@@ -333,19 +340,20 @@ namespace regexFA
             posY = y;
             scale = s;
             labelEdge = "" + label;
+            String id = label + RandomString();
 
             nodes = new List<Node>();
             edges = new List<Edge>();
-            Node n = new Node("gsym_" + label + "_strt");
+            Node n = new Node("gsym_" + id + "_strt");
             n.LabelText = "strt_" + label;
             anchorStart = n;
             nodes.Add(n);
-            n = new Node("gsym_" + label + "_end");
+            n = new Node("gsym_" + id + "_end");
             n.LabelText = "end_" + label;
             anchorEnd = n;
             nodes.Add(n);
 
-            Edge e = new Edge("gsym_" + label + "_strt", "label", "gsym_" + label + "_end");
+            Edge e = new Edge("gsym_" + id + "_strt", "id", "gsym_" + id + "_end");
             e.LabelText = "label";
             edges.Add(e);
         }
@@ -429,7 +437,7 @@ namespace regexFA
             anchorEnd = b.anchorEnd;
             */
             
-            bool symA = false, symB = false;
+            bool symA = false, symB = false;                //fix this - unify merge
             if (a.nodes.Count == 2)
                 symA = true;
             if (b.nodes.Count == 2)
