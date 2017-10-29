@@ -236,7 +236,7 @@ namespace regexFA
             char c = root.data;
             if(c == '*')
             {
-
+                root.graph = new GraphStar(root.left.graph);
             }
             else if(c == '+')
             {
@@ -336,13 +336,18 @@ namespace regexFA
 
             nodes = new List<Node>();
             edges = new List<Edge>();
-            Node n = new Node("gsym_" + label);
-            //n.Label = new Microsoft.Msagl.Drawing.Label(""+label);
-            n.LabelText = ""+label;
+            Node n = new Node("gsym_" + label + "_strt");
+            n.LabelText = "strt_" + label;
+            anchorStart = n;
+            nodes.Add(n);
+            n = new Node("gsym_" + label + "_end");
+            n.LabelText = "end_" + label;
+            anchorEnd = n;
             nodes.Add(n);
 
-            anchorStart = nodes[0];
-            anchorEnd = nodes[0];
+            Edge e = new Edge("gsym_" + label + "_strt", "label", "gsym_" + label + "_end");
+            e.LabelText = "label";
+            edges.Add(e);
         }
     }
 
@@ -357,12 +362,14 @@ namespace regexFA
             n.LabelText = "strt";
             anchorStart = n;
             nodes.Add(n);
+            /*
             n = new Node("gplus_" + a.nodes[0].Id + b.nodes[0].Id + "_rcva");
             n.LabelText = "rcva";
             nodes.Add(n);
             n = new Node("gplus_" + a.nodes[0].Id + b.nodes[0].Id + "_rcvb");
             n.LabelText = "rcvb";
             nodes.Add(n);
+             */
             n = new Node("gplus_" + a.nodes[0].Id + b.nodes[0].Id + "_end");
             n.LabelText = "end";
             anchorEnd = n;
@@ -384,17 +391,17 @@ namespace regexFA
             {
                 lt = a.labelEdge;
             }
-            Edge e = new Edge(aEndA, lt, "gplus_" + a.nodes[0].Id + b.nodes[0].Id + "_rcva");
-            
-            edges.Add(e);
+            //Edge e = new Edge(aEndA, lt, "gplus_" + a.nodes[0].Id + b.nodes[0].Id + "_rcva");
+            //e.LabelText = lt;            
+            //edges.Add(e);
             edges.Add(new Edge("gplus_" + a.nodes[0].Id + b.nodes[0].Id+"_strt","",aStartB));
             if (b.nodes.Count == 1)
             {
                 lt = b.labelEdge;
             }
-            edges.Add(new Edge(aEndB, lt, "gplus_" + a.nodes[0].Id + b.nodes[0].Id + "_rcvb"));
-            edges.Add(new Edge("gplus_" + a.nodes[0].Id + b.nodes[0].Id+"_rcva","","gplus_" + a.nodes[0].Id + b.nodes[0].Id + "_end"));
-            edges.Add(new Edge("gplus_" + a.nodes[0].Id + b.nodes[0].Id+"_rcvb","","gplus_" + a.nodes[0].Id + b.nodes[0].Id + "_end"));
+            //edges.Add(new Edge(aEndB, lt, "gplus_" + a.nodes[0].Id + b.nodes[0].Id + "_rcvb"));
+            edges.Add(new Edge(aEndA,"","gplus_" + a.nodes[0].Id + b.nodes[0].Id + "_end"));
+            edges.Add(new Edge(aEndB,"","gplus_" + a.nodes[0].Id + b.nodes[0].Id + "_end"));
             edges.AddRange(a.edges);
             edges.AddRange(b.edges);
         }
@@ -407,6 +414,7 @@ namespace regexFA
             nodes = new List<Node>();
             edges = new List<Edge>();
 
+            /*
             nodes.AddRange(a.nodes);
             nodes.AddRange(b.nodes);
             String aStartA = a.anchorStart.Id,
@@ -419,6 +427,47 @@ namespace regexFA
             edges.Add(new Edge(aEndA,"",aStartB));
             anchorStart = a.anchorStart;
             anchorEnd = b.anchorEnd;
+            */
+            
+            bool symA = false, symB = false;
+            if (a.nodes.Count == 2)
+                symA = true;
+            if (b.nodes.Count == 2)
+                symB = true;
+
+            if (symA)
+            {
+                nodes.Add(a.anchorStart);
+            }
+            else
+                nodes.AddRange(a.nodes);
+            if (symB && !symA)
+            {
+                nodes.Add(b.anchorEnd);
+            }
+            else
+                nodes.AddRange(b.nodes);
+            String aStartA = a.anchorStart.Id,
+                aEndA = a.anchorEnd.Id,
+                aStartB = b.anchorStart.Id,
+                aEndB = b.anchorEnd.Id;
+            if(symA)
+            {
+                edges.Add(new Edge(aStartA, "", aStartB));
+            }
+            else
+            {
+                edges.AddRange(a.edges);
+                if (symB)
+                    edges.Add(new Edge(aEndA, "", aEndB));
+                else
+                    edges.Add(new Edge(aEndA, "", aStartB));
+            }
+            if(!symB || symA)
+                edges.AddRange(b.edges);
+
+            anchorStart = a.anchorStart;
+            anchorEnd = b.anchorEnd;    
 
             /*
             nodes.Add(new Node("gdot_" + a + b + "_a"));
@@ -427,6 +476,42 @@ namespace regexFA
             anchorStart = nodes[0];
             anchorEnd = nodes[1];
             */
+        }
+    }
+
+    public class GraphStar : GraphBase
+    {
+        public GraphStar(GraphBase a, int x = 0, int y = 0, float s = 1.0f)
+        {
+            nodes = new List<Node>();
+            edges = new List<Edge>();
+
+            Node n = new Node("gplus_" + a.nodes[0].Id + "_strt");
+            n.LabelText = "strt";
+            anchorStart = n;
+            nodes.Add(n);
+            n = new Node("gplus_" + a.nodes[0].Id + "_end");
+            n.LabelText = "end";
+            anchorEnd = n;
+            nodes.Add(n);
+            //nodes.Add(new Node("gplus_" + a.nodes[0].Id + b.nodes[0].Id+"_rcva"));
+            //nodes.Add(new Node("gplus_" + a.nodes[0].Id + b.nodes[0].Id+"_rcvb"));
+            //nodes.Add(new Node("gplus_" + a.nodes[0].Id + b.nodes[0].Id + "_end"));
+            nodes.AddRange(a.nodes);
+
+            String aStartA = a.anchorStart.Id,
+                aEndA = a.anchorEnd.Id;
+
+            edges.Add(new Edge("gplus_" + a.nodes[0].Id + "_strt", "", aStartA));
+            String lt = "";
+            if (a.nodes.Count == 1)
+            {
+                lt = a.labelEdge;
+            }
+            edges.Add(new Edge(aEndA, "", "gplus_" + a.nodes[0].Id + "_end"));
+            edges.Add(new Edge(aEndA, "", aStartA));
+            edges.Add(new Edge("gplus_" + a.nodes[0].Id + "_strt", "", "gplus_" + a.nodes[0].Id + "_end"));
+            edges.AddRange(a.edges);
         }
     }
 }
