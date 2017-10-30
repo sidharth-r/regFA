@@ -34,8 +34,8 @@ namespace regexFA
             gViewer.Dock = DockStyle.Fill;
             gViewer.EdgeInsertButtonVisible = false;
             gViewer.LayoutEditingEnabled = false;
+            gViewer.LayoutAlgorithmSettingsButtonVisible = false;
             splitContainer1.Panel1.Controls.Add(gViewer);
-            //this.Controls.Add(gViewer);
             this.ResumeLayout();
         }
 
@@ -59,20 +59,31 @@ namespace regexFA
                 return;
             }
 
-            BTreeNode root = new BTreeNode();//regex.Last());
+            BTreeNode root = new BTreeNode();
             regex = new string(regex.ToCharArray().Reverse().ToArray());
             root = makeTree(regex,root);
 
             drawTree(root);
 
+            Node inv = new Node("init_node_inv");
+            inv.Attr.Shape = Shape.Plaintext;
+            inv.LabelText = "";
+            graphFA.AddNode(inv);
+
             foreach(Node n in root.graph.nodes)
             {
+                n.Attr.Shape = Shape.Circle;
+                if (n == root.graph.anchorEnd)
+                    n.Attr.Shape = Shape.DoubleCircle;
                 graphFA.AddNode(n);
             }
 
+            graphFA.AddEdge(inv.Id, root.graph.anchorStart.Id);
+
             foreach(Edge e in root.graph.edges)
             {
-                graphFA.AddEdge(e.Source,e.Target);
+                
+                graphFA.AddEdge(e.Source,e.LabelText,e.Target);
             }
 
             gViewer.Graph = null;
@@ -151,7 +162,7 @@ namespace regexFA
             BTreeNode left = new BTreeNode();
             BTreeNode right = new BTreeNode();
 
-            StringBuilder stbr = new StringBuilder();//, stbl = new StringBuilder();
+            StringBuilder stbr = new StringBuilder();
             String strr, strl;
 
             int n = 1, i = -1;
@@ -225,9 +236,7 @@ namespace regexFA
 
         private void drawTree(BTreeNode root)
         {
-            char left, right;
-
-            if (root == null)// || tokenPrecedence(root.data) == 0)
+            if (root == null)
                 return;
             
             drawTree(root.left);
@@ -345,16 +354,15 @@ namespace regexFA
             nodes = new List<Node>();
             edges = new List<Edge>();
             Node n = new Node("gsym_" + id + "_strt");
-            n.LabelText = "strt_" + label;
+            n.LabelText = "";
             anchorStart = n;
             nodes.Add(n);
             n = new Node("gsym_" + id + "_end");
-            n.LabelText = "end_" + label;
+            n.LabelText = "";
             anchorEnd = n;
             nodes.Add(n);
 
-            Edge e = new Edge("gsym_" + id + "_strt", "id", "gsym_" + id + "_end");
-            e.LabelText = "label";
+            Edge e = new Edge("gsym_" + id + "_strt", labelEdge, "gsym_" + id + "_end");
             edges.Add(e);
         }
     }
@@ -367,24 +375,14 @@ namespace regexFA
             edges = new List<Edge>();
 
             Node n = new Node("gplus_" + a.nodes[0].Id + b.nodes[0].Id + "_strt");
-            n.LabelText = "strt";
+            n.LabelText = "";
             anchorStart = n;
             nodes.Add(n);
-            /*
-            n = new Node("gplus_" + a.nodes[0].Id + b.nodes[0].Id + "_rcva");
-            n.LabelText = "rcva";
-            nodes.Add(n);
-            n = new Node("gplus_" + a.nodes[0].Id + b.nodes[0].Id + "_rcvb");
-            n.LabelText = "rcvb";
-            nodes.Add(n);
-             */
+            
             n = new Node("gplus_" + a.nodes[0].Id + b.nodes[0].Id + "_end");
-            n.LabelText = "end";
+            n.LabelText = "";
             anchorEnd = n;
             nodes.Add(n);
-            //nodes.Add(new Node("gplus_" + a.nodes[0].Id + b.nodes[0].Id+"_rcva"));
-            //nodes.Add(new Node("gplus_" + a.nodes[0].Id + b.nodes[0].Id+"_rcvb"));
-            //nodes.Add(new Node("gplus_" + a.nodes[0].Id + b.nodes[0].Id + "_end"));
             nodes.AddRange(a.nodes);
             nodes.AddRange(b.nodes);
             
@@ -393,23 +391,10 @@ namespace regexFA
                 aStartB = b.anchorStart.Id,
                 aEndB = b.anchorEnd.Id;
 
-            edges.Add(new Edge("gplus_" + a.nodes[0].Id + b.nodes[0].Id+"_strt","",aStartA));
-            String lt = "";
-            if(a.nodes.Count == 1)
-            {
-                lt = a.labelEdge;
-            }
-            //Edge e = new Edge(aEndA, lt, "gplus_" + a.nodes[0].Id + b.nodes[0].Id + "_rcva");
-            //e.LabelText = lt;            
-            //edges.Add(e);
-            edges.Add(new Edge("gplus_" + a.nodes[0].Id + b.nodes[0].Id+"_strt","",aStartB));
-            if (b.nodes.Count == 1)
-            {
-                lt = b.labelEdge;
-            }
-            //edges.Add(new Edge(aEndB, lt, "gplus_" + a.nodes[0].Id + b.nodes[0].Id + "_rcvb"));
-            edges.Add(new Edge(aEndA,"","gplus_" + a.nodes[0].Id + b.nodes[0].Id + "_end"));
-            edges.Add(new Edge(aEndB,"","gplus_" + a.nodes[0].Id + b.nodes[0].Id + "_end"));
+            edges.Add(new Edge("gplus_" + a.nodes[0].Id + b.nodes[0].Id+"_strt","ε",aStartA));
+            edges.Add(new Edge("gplus_" + a.nodes[0].Id + b.nodes[0].Id+"_strt","ε",aStartB));
+            edges.Add(new Edge(aEndA,"ε","gplus_" + a.nodes[0].Id + b.nodes[0].Id + "_end"));
+            edges.Add(new Edge(aEndB,"ε","gplus_" + a.nodes[0].Id + b.nodes[0].Id + "_end"));
             edges.AddRange(a.edges);
             edges.AddRange(b.edges);
         }
@@ -421,21 +406,6 @@ namespace regexFA
         {
             nodes = new List<Node>();
             edges = new List<Edge>();
-
-            /*
-            nodes.AddRange(a.nodes);
-            nodes.AddRange(b.nodes);
-            String aStartA = a.anchorStart.Id,
-                aEndA = a.anchorEnd.Id,
-                aStartB = b.anchorStart.Id,
-                aEndB = b.anchorEnd.Id;
-
-            edges.AddRange(a.edges);
-            edges.AddRange(b.edges);
-            edges.Add(new Edge(aEndA,"",aStartB));
-            anchorStart = a.anchorStart;
-            anchorEnd = b.anchorEnd;
-            */
             
             bool symA = false, symB = false;                //fix this - unify merge
             if (a.nodes.Count == 2)
@@ -461,29 +431,21 @@ namespace regexFA
                 aEndB = b.anchorEnd.Id;
             if(symA)
             {
-                edges.Add(new Edge(aStartA, "", aStartB));
+                edges.Add(new Edge(aStartA, a.labelEdge, aStartB));
             }
             else
             {
                 edges.AddRange(a.edges);
                 if (symB)
-                    edges.Add(new Edge(aEndA, "", aEndB));
+                    edges.Add(new Edge(aEndA, b.labelEdge, aEndB));
                 else
-                    edges.Add(new Edge(aEndA, "", aStartB));
+                    edges.Add(new Edge(aEndA, "ε", aStartB));
             }
             if(!symB || symA)
                 edges.AddRange(b.edges);
 
             anchorStart = a.anchorStart;
-            anchorEnd = b.anchorEnd;    
-
-            /*
-            nodes.Add(new Node("gdot_" + a + b + "_a"));
-            nodes.Add(new Node("gdot_" + a + b + "_b"));
-            Edge e = new Edge("gdot_" + a + b + "_a", "", "gdot_" + a + b + "_b");
-            anchorStart = nodes[0];
-            anchorEnd = nodes[1];
-            */
+            anchorEnd = b.anchorEnd;
         }
     }
 
@@ -495,30 +457,22 @@ namespace regexFA
             edges = new List<Edge>();
 
             Node n = new Node("gplus_" + a.nodes[0].Id + "_strt");
-            n.LabelText = "strt";
+            n.LabelText = "";
             anchorStart = n;
             nodes.Add(n);
+            nodes.AddRange(a.nodes);
             n = new Node("gplus_" + a.nodes[0].Id + "_end");
-            n.LabelText = "end";
+            n.LabelText = "";
             anchorEnd = n;
             nodes.Add(n);
-            //nodes.Add(new Node("gplus_" + a.nodes[0].Id + b.nodes[0].Id+"_rcva"));
-            //nodes.Add(new Node("gplus_" + a.nodes[0].Id + b.nodes[0].Id+"_rcvb"));
-            //nodes.Add(new Node("gplus_" + a.nodes[0].Id + b.nodes[0].Id + "_end"));
-            nodes.AddRange(a.nodes);
 
             String aStartA = a.anchorStart.Id,
                 aEndA = a.anchorEnd.Id;
 
-            edges.Add(new Edge("gplus_" + a.nodes[0].Id + "_strt", "", aStartA));
-            String lt = "";
-            if (a.nodes.Count == 1)
-            {
-                lt = a.labelEdge;
-            }
-            edges.Add(new Edge(aEndA, "", "gplus_" + a.nodes[0].Id + "_end"));
-            edges.Add(new Edge(aEndA, "", aStartA));
-            edges.Add(new Edge("gplus_" + a.nodes[0].Id + "_strt", "", "gplus_" + a.nodes[0].Id + "_end"));
+            edges.Add(new Edge("gplus_" + a.nodes[0].Id + "_strt", "ε", aStartA));
+            edges.Add(new Edge(aEndA, "ε", "gplus_" + a.nodes[0].Id + "_end"));
+            edges.Add(new Edge(aEndA, "ε", aStartA));
+            edges.Add(new Edge("gplus_" + a.nodes[0].Id + "_strt", "ε", "gplus_" + a.nodes[0].Id + "_end"));
             edges.AddRange(a.edges);
         }
     }
