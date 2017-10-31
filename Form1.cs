@@ -52,6 +52,7 @@ namespace regexFA
 
         private void procRegex(String regex)
         {
+            regex = formatRegexString(regex);
             regex = toRPN(regex);
             if (regex == "")
             {
@@ -126,7 +127,7 @@ namespace regexFA
                     if(rpnStack.Count > 0)
                     {
                         char t = rpnStack.Peek();
-                        while (p < tokenPrecedence(t) && t != '(')
+                        while (p <= tokenPrecedence(t) && t != '(')
                         {
                             sb.Append(rpnStack.Pop());
                             if (rpnStack.Count == 0)
@@ -185,7 +186,7 @@ namespace regexFA
                 else if(!gotOpr)
                 {
                     stbr.Append(c);
-                    if(c != '*')
+                    if(tokenPrecedence(c) != 3)
                         n++;
                 }
                 else
@@ -195,7 +196,7 @@ namespace regexFA
                 }
             }
 
-            if(root.data == '*')
+            if(tokenPrecedence(root.data) == 3)
             {
                 strl = stbr.ToString();
                 strr = null;
@@ -247,9 +248,17 @@ namespace regexFA
             {
                 root.graph = new GraphStar(root.left.graph);
             }
+            else if(c == '?')
+            {
+                root.graph = new GraphQMark(root.left.graph);
+            }
             else if(c == '+')
             {
-                root.graph = new GraphPlus(root.left.graph, root.right.graph);
+                root.graph = new GraphStar(root.left.graph, true);
+            }
+            else if(c == '|')
+            {
+                root.graph = new GraphUnion(root.left.graph, root.right.graph);
             }
             else if (c == '.')
             {
@@ -270,14 +279,32 @@ namespace regexFA
         {
             if (c == '(' || c == ')')
                 return 4;
-            else if (c == '*')
+            else if (c == '*' || c == '?' || c == '+')
                 return 3;
             else if (c == '.')
                 return 2;
-            else if (c == '+')
+            else if (c == '|')
                 return 1;
             else
                 return 0;
+        }
+
+        private String formatRegexString(String regex)
+        {
+            StringBuilder sb = new StringBuilder();
+
+            int i;
+
+            sb.Append(regex[0]);
+            for(i = 1; i < regex.Length; i++)
+            {                
+                if (tokenPrecedence(regex[i]) == 0 && (tokenPrecedence(regex[i - 1]) == 0 || tokenPrecedence(regex[i-1]) == 3))
+                    sb.Append('.');
+                sb.Append(regex[i]);
+            }
+            
+
+            return sb.ToString();
         }
     }
 
@@ -324,8 +351,8 @@ namespace regexFA
 
     public class GraphBase
     {
-        public int posX, posY;
-        public float scale;
+        public int posX, posY;      //unused
+        public float scale;         //unused
         public String labelEdge;
 
         public List<Node> nodes;
@@ -367,19 +394,19 @@ namespace regexFA
         }
     }
 
-    public class GraphPlus : GraphBase
+    public class GraphUnion : GraphBase
     {
-        public GraphPlus(GraphBase a, GraphBase b, int x = 0, int y = 0, float s = 1.0f)
+        public GraphUnion(GraphBase a, GraphBase b, int x = 0, int y = 0, float s = 1.0f)
         {
             nodes = new List<Node>();
             edges = new List<Edge>();
 
-            Node n = new Node("gplus_" + a.nodes[0].Id + b.nodes[0].Id + "_strt");
+            Node n = new Node("gunion_" + a.nodes[0].Id + b.nodes[0].Id + "_strt");
             n.LabelText = "";
             anchorStart = n;
             nodes.Add(n);
             
-            n = new Node("gplus_" + a.nodes[0].Id + b.nodes[0].Id + "_end");
+            n = new Node("gunion_" + a.nodes[0].Id + b.nodes[0].Id + "_end");
             n.LabelText = "";
             anchorEnd = n;
             nodes.Add(n);
@@ -391,10 +418,10 @@ namespace regexFA
                 aStartB = b.anchorStart.Id,
                 aEndB = b.anchorEnd.Id;
 
-            edges.Add(new Edge("gplus_" + a.nodes[0].Id + b.nodes[0].Id+"_strt","ε",aStartA));
-            edges.Add(new Edge("gplus_" + a.nodes[0].Id + b.nodes[0].Id+"_strt","ε",aStartB));
-            edges.Add(new Edge(aEndA,"ε","gplus_" + a.nodes[0].Id + b.nodes[0].Id + "_end"));
-            edges.Add(new Edge(aEndB,"ε","gplus_" + a.nodes[0].Id + b.nodes[0].Id + "_end"));
+            edges.Add(new Edge("gunion_" + a.nodes[0].Id + b.nodes[0].Id+"_strt","ε",aStartA));
+            edges.Add(new Edge("gunion_" + a.nodes[0].Id + b.nodes[0].Id+"_strt","ε",aStartB));
+            edges.Add(new Edge(aEndA,"ε","gunion_" + a.nodes[0].Id + b.nodes[0].Id + "_end"));
+            edges.Add(new Edge(aEndB,"ε","gunion_" + a.nodes[0].Id + b.nodes[0].Id + "_end"));
             edges.AddRange(a.edges);
             edges.AddRange(b.edges);
         }
@@ -451,17 +478,23 @@ namespace regexFA
 
     public class GraphStar : GraphBase
     {
-        public GraphStar(GraphBase a, int x = 0, int y = 0, float s = 1.0f)
+        public GraphStar(GraphBase a, bool drawPlus = false, int x = 0, int y = 0, float s = 1.0f)
         {
             nodes = new List<Node>();
             edges = new List<Edge>();
 
-            Node n = new Node("gplus_" + a.nodes[0].Id + "_strt");
+            String labelPrefix;
+            if (drawPlus)
+                labelPrefix = "gplus_";
+            else
+                labelPrefix = "gstar_";
+
+            Node n = new Node(labelPrefix + a.nodes[0].Id + "_strt");
             n.LabelText = "";
             anchorStart = n;
             nodes.Add(n);
             nodes.AddRange(a.nodes);
-            n = new Node("gplus_" + a.nodes[0].Id + "_end");
+            n = new Node(labelPrefix + a.nodes[0].Id + "_end");
             n.LabelText = "";
             anchorEnd = n;
             nodes.Add(n);
@@ -469,11 +502,36 @@ namespace regexFA
             String aStartA = a.anchorStart.Id,
                 aEndA = a.anchorEnd.Id;
 
-            edges.Add(new Edge("gplus_" + a.nodes[0].Id + "_strt", "ε", aStartA));
-            edges.Add(new Edge(aEndA, "ε", "gplus_" + a.nodes[0].Id + "_end"));
-            edges.Add(new Edge(aEndA, "ε", aStartA));
-            edges.Add(new Edge("gplus_" + a.nodes[0].Id + "_strt", "ε", "gplus_" + a.nodes[0].Id + "_end"));
+            edges.Add(new Edge(labelPrefix + a.nodes[0].Id + "_strt", "ε", aStartA));
+            edges.Add(new Edge(aEndA, "ε", labelPrefix + a.nodes[0].Id + "_end"));
+            if(!drawPlus)
+                edges.Add(new Edge(labelPrefix + a.nodes[0].Id + "_strt", "ε", labelPrefix + a.nodes[0].Id + "_end"));
             edges.AddRange(a.edges);
+            edges.Add(new Edge(aEndA, "ε", aStartA));
+        }
+    }
+
+    public class GraphQMark : GraphBase
+    {
+        public GraphQMark(GraphBase a, int x = 0, int y = 0, float s = 1.0f)
+        {
+            nodes = new List<Node>();
+            edges = new List<Edge>();
+
+            nodes.AddRange(a.nodes);
+            anchorStart = a.anchorStart;
+            anchorEnd = a.anchorEnd;
+
+            String aStartA = a.anchorStart.Id, aEndA = a.anchorEnd.Id;
+
+            edges.Add(new Edge(aStartA, "ε", aEndA));
+            foreach(Edge e in a.edges)
+            {
+                if (e.Source == anchorStart.Id && e.Target == anchorEnd.Id && e.LabelText == "ε")
+                    continue;
+                edges.Add(e);
+            }
+            
         }
     }
 }
