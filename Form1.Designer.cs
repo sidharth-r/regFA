@@ -28,9 +28,10 @@
         /// </summary>
         private void InitializeComponent()
         {
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(rfaForm));
             this.splitContainer1 = new System.Windows.Forms.SplitContainer();
-            this.textIn = new System.Windows.Forms.TextBox();
             this.buttonDraw = new System.Windows.Forms.Button();
+            this.textIn = new System.Windows.Forms.TextBox();
             ((System.ComponentModel.ISupportInitialize)(this.splitContainer1)).BeginInit();
             this.splitContainer1.Panel2.SuspendLayout();
             this.splitContainer1.SuspendLayout();
@@ -51,13 +52,6 @@
             this.splitContainer1.SplitterDistance = 482;
             this.splitContainer1.TabIndex = 2;
             // 
-            // textIn
-            // 
-            this.textIn.Location = new System.Drawing.Point(0, 2);
-            this.textIn.Name = "textIn";
-            this.textIn.Size = new System.Drawing.Size(689, 20);
-            this.textIn.TabIndex = 0;
-            // 
             // buttonDraw
             // 
             this.buttonDraw.Location = new System.Drawing.Point(692, 0);
@@ -68,14 +62,22 @@
             this.buttonDraw.UseVisualStyleBackColor = true;
             this.buttonDraw.Click += new System.EventHandler(this.buttonDraw_Click);
             // 
+            // textIn
+            // 
+            this.textIn.Location = new System.Drawing.Point(0, 2);
+            this.textIn.Name = "textIn";
+            this.textIn.Size = new System.Drawing.Size(689, 20);
+            this.textIn.TabIndex = 0;
+            // 
             // rfaForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(770, 511);
             this.Controls.Add(this.splitContainer1);
+            this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.Name = "rfaForm";
-            this.Text = "RegFA";
+            this.Text = "RegexFA";
             this.Load += new System.EventHandler(this.rfaForm_Load);
             this.splitContainer1.Panel2.ResumeLayout(false);
             this.splitContainer1.Panel2.PerformLayout();

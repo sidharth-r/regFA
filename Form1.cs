@@ -53,7 +53,7 @@ namespace regexFA
         private void procRegex(String regex)
         {
             regex = formatRegexString(regex);
-            regex = toRPN(regex);
+            regex = toRPN(regex);       //System.InvalidOperationException
             if (regex == "")
             {
                 showInvStr();
@@ -64,7 +64,8 @@ namespace regexFA
             regex = new string(regex.ToCharArray().Reverse().ToArray());
             root = makeTree(regex,root);
 
-            drawTree(root);
+            if (!drawTree(root))
+                return;
 
             Node inv = new Node("init_node_inv");
             inv.Attr.Shape = Shape.Plaintext;
@@ -132,6 +133,7 @@ namespace regexFA
                             sb.Append(rpnStack.Pop());
                             if (rpnStack.Count == 0)
                                 break;
+                            t = rpnStack.Peek();
                         }
                         
                     }                    
@@ -166,12 +168,10 @@ namespace regexFA
             StringBuilder stbr = new StringBuilder();
             String strr, strl;
 
-            int n = 1, i = -1;
+            int n = 1, i = 0;
             bool gotOpr = false;
             foreach (char c in regex)
             {
-                i++;
-
                 if(n == 0)
                 {
                     break;
@@ -194,6 +194,7 @@ namespace regexFA
                     showInvStr();
                     return null;
                 }
+                i++;
             }
 
             if(tokenPrecedence(root.data) == 3)
@@ -211,10 +212,13 @@ namespace regexFA
             {
                 left = makeTree(strl, left);
             }
-            else
+            else if(strl.Length == 1)
             {
                 left.data = strl.First();
-                
+            }
+            else
+            {
+                left = null;
             }
             root.left = left;
 
@@ -235,15 +239,20 @@ namespace regexFA
             return root;
         }
 
-        private void drawTree(BTreeNode root)
+        private bool drawTree(BTreeNode root)
         {
             if (root == null)
-                return;
+                return false;
             
             drawTree(root.left);
             drawTree(root.right);
 
             char c = root.data;
+            if (root.left == null && tokenPrecedence(c) > 0)
+            {
+                showInvStr();
+                return false;
+            }
             if(c == '*')
             {
                 root.graph = new GraphStar(root.left.graph);
@@ -262,12 +271,14 @@ namespace regexFA
             }
             else if (c == '.')
             {
+                
                 root.graph = new GraphDot(root.left.graph, root.right.graph);
             }
             else
             {
                 root.graph = new GraphSymbol(c);
             }
+            return true;
         }
 
         private void showInvStr()
@@ -297,8 +308,9 @@ namespace regexFA
 
             sb.Append(regex[0]);
             for(i = 1; i < regex.Length; i++)
-            {                
-                if (tokenPrecedence(regex[i]) == 0 && (tokenPrecedence(regex[i - 1]) == 0 || tokenPrecedence(regex[i-1]) == 3))
+            {
+                int j = tokenPrecedence(regex[i]), k = tokenPrecedence(regex[i - 1]);
+                if ((j == 0 && (k == 0 || k == 3)) || (j == 4 && k == 4))
                     sb.Append('.');
                 sb.Append(regex[i]);
             }
