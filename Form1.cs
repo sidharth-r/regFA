@@ -65,7 +65,10 @@ namespace regexFA
             root = makeTree(regex,root);
 
             if (!drawTree(root))
+            {
+                showInvStr();
                 return;
+            }
 
             Node inv = new Node("init_node_inv");
             inv.Attr.Shape = Shape.Plaintext;
@@ -244,13 +247,21 @@ namespace regexFA
             if (root == null)
                 return false;
             
-            drawTree(root.left);
-            drawTree(root.right);
+            if(root.left != null)
+            {
+                if (!drawTree(root.left))
+                    return false;
+            }
+            if(root.right != null)
+            {
+                if (!drawTree(root.right))
+                    return false;
+            }
+            
 
             char c = root.data;
             if (root.left == null && tokenPrecedence(c) > 0)
             {
-                showInvStr();
                 return false;
             }
             if(c == '*')
