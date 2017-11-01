@@ -53,7 +53,7 @@ namespace regexFA
         private void procRegex(String regex)
         {
             regex = formatRegexString(regex);
-            regex = toRPN(regex);       //System.InvalidOperationException
+            regex = toRPN(regex);    
             if (regex == "")
             {
                 showInvStr();
@@ -310,7 +310,7 @@ namespace regexFA
             for(i = 1; i < regex.Length; i++)
             {
                 int j = tokenPrecedence(regex[i]), k = tokenPrecedence(regex[i - 1]);
-                if ((j == 0 && (k == 0 || k == 3)) || (j == 4 && k == 4))
+                if ((j == 0 && (k == 0 || k == 3)) || (j == 4 && (k == 4 || k == 3)))
                     sb.Append('.');
                 sb.Append(regex[i]);
             }
