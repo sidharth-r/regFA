@@ -3,3 +3,6 @@ Regex to NFA visualizer
 
 
 Uses Microsoft Automatic Graph Layout Copyright (c) Microsoft Corporation
+
+Platform: Windows
+
